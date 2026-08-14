@@ -38,8 +38,11 @@ toolchain — runs inside containers. To work natively as well, see
 make run     # build, start, migrate, export the local root CA
 ```
 
-Then open <https://localhost>. The certificate is minted by Caddy's own local
-CA; `make certs` prints how to trust it in each browser.
+Then open <https://localhost> (the command's own output prints the exact URL,
+including the port if you customized `HTTP_PORT`/`HTTPS_PORT` in `.env` —
+see `.env.example`, useful when 80/443 are already taken on your machine).
+The certificate is minted by Caddy's own local CA; `make certs` prints how to
+trust it in each browser.
 
 ```sh
 make         # every CI check, then the app, then Playwright against it

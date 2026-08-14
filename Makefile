@@ -45,6 +45,11 @@ SERVICE      ?= api
 SERVICES     ?=
 WAIT_TIMEOUT ?= 300
 STUDIO_PORT  ?= 5555
+# Same defaults and override mechanism as compose.yml's caddy ports: a local
+# .env wins (used only to print the right URL below), same as DB_ENV further
+# down.
+HTTP_PORT  ?= $(or $(shell grep -oP '^HTTP_PORT=\K.*' .env 2>/dev/null),80)
+HTTPS_PORT ?= $(or $(shell grep -oP '^HTTPS_PORT=\K.*' .env 2>/dev/null),443)
 # Matches the identities e2e/tests/auth.spec.ts signs up, so test-e2e can clear
 # them afterwards.
 E2E_EMAIL_PREFIX ?= browser-
@@ -53,7 +58,12 @@ E2E_EMAIL_PREFIX ?= browser-
 # published ports live on the HOST, so the suite talks to the caddy service
 # name over the shared compose network instead; the Caddyfile lists `caddy` as
 # a site address for exactly this. /.dockerenv exists only inside a container.
-E2E_BASE_URL ?= $(if $(wildcard /.dockerenv),https://caddy,https://localhost)
+# https://localhost when HTTPS_PORT is the default, https://localhost:<port>
+# otherwise: the auto http->https redirect only exists on the default ports
+# (see .env.example), so a non-default port must be spelled out.
+LOCAL_URL := https://localhost$(if $(filter-out 443,$(HTTPS_PORT)),:$(HTTPS_PORT))
+
+E2E_BASE_URL ?= $(if $(wildcard /.dockerenv),https://caddy,$(LOCAL_URL))
 
 # Hosts the natively run tests reach the stores on. Inside the devcontainer they
 # are on the compose network and resolve by service name; from a host shell only
@@ -90,7 +100,7 @@ all:
 	@$(MAKE) --no-print-directory test-e2e
 	@printf '\n  ALL GREEN: checks, build, e2e (console gate included) all passed.\n'
 	@printf '  What you commit now will pass CI.\n'
-	@printf '  The PRODUCTION stack is now running at https://localhost:\n'
+	@printf '  The PRODUCTION stack is now running at $(LOCAL_URL):\n'
 	@printf '  run `make dev` to get hot reload back, `make down` to stop everything.\n\n'
 
 # --- launch only --------------------------------------------------------------
@@ -103,8 +113,8 @@ run:
 	@# certs runs last, not first: Caddy mints its internal CA on first boot, so
 	@# there is nothing to export until the stack is up.
 	@$(MAKE) --no-print-directory certs
-	@printf '\n  template_app is running:  https://localhost\n'
-	@printf '  API docs:                     https://localhost/api/docs\n'
+	@printf '\n  template_app is running:  $(LOCAL_URL)\n'
+	@printf '  API docs:                     $(LOCAL_URL)/api/docs\n'
 	@printf '  Logs:                         make logs\n\n'
 
 build: ## Build the production images
@@ -133,7 +143,7 @@ dev: ## Start the development stack: bind-mounted source, hot reload
 	@for d in $(DEV_MASKED_DIRS); do rmdir "$$d" 2>/dev/null || true; done
 	mkdir -p $(DEV_MASKED_DIRS)
 	$(COMPOSE_DEV) up -d --build --wait --wait-timeout $(WAIT_TIMEOUT)
-	@printf '\n  Dev stack up: https://localhost\n'
+	@printf '\n  Dev stack up: $(LOCAL_URL)\n'
 	@printf '  The web and api containers reinstall dependencies on start;\n'
 	@printf '  follow them with `make logs` until the servers report ready.\n\n'
 

@@ -61,6 +61,9 @@ terminated once, at the edge.
 | `:80` | caddy | Redirects to HTTPS |
 | `:443` tcp + udp | caddy | The only way in. udp is HTTP/3 |
 
+Defaults; overridable per-machine via `HTTP_PORT`/`HTTPS_PORT` in `.env`
+(see `.env.example`) when 80/443 are already bound by something else.
+
 ### Why one origin matters
 
 Because `/` and `/api` are the same origin, there is no CORS configuration to
