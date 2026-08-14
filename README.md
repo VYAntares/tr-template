@@ -73,6 +73,26 @@ The rename is deliberately mechanical. In order:
    and see the note in that file before enabling "Require review from Code
    Owners".
 
+## Publishing container images
+
+`.github/workflows/images.yml` builds and vulnerability-scans the production
+images for amd64 and arm64 on every push. **Publishing them to GHCR is off by
+default**, because a fresh repository cannot create a package until it is told
+to. Both steps are required to turn it on:
+
+1. **Settings → Actions → General → Workflow permissions** → select
+   _Read and write permissions_. A repository left on the read-only default
+   strips `packages: write` from `GITHUB_TOKEN` regardless of what the workflow
+   asks for, and the first push fails with
+   `denied: permission_denied: read_package`.
+2. **Settings → Secrets and variables → Actions → Variables** → add a repository
+   variable `PUBLISH_IMAGES` set to `true`.
+
+The first successful push creates the package as private and links it to the
+repository; make it public from the package's own settings page if you want
+anonymous pulls. Note that the arm64 job runs on `ubuntu-24.04-arm`, which is
+free on public repositories but needs a paid plan on a private one.
+
 ## Layout
 
 ```

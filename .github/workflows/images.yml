@@ -24,9 +24,26 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  # A fork's GITHUB_TOKEN cannot write to the upstream package namespace. Build
-  # anyway, so a fork still finds out its Dockerfile is broken, but do not push.
-  PUSH: ${{ github.event.repository.fork == false }}
+  # Publishing to GHCR is OFF by default in this template, and the build and the
+  # Trivy scan still run: a broken Dockerfile fails the job whether or not an
+  # image is published.
+  #
+  # Turning it on is two steps, both required, and the first one is what the
+  # error `denied: permission_denied: read_package` means when it is missing:
+  #
+  #   1. Settings > Actions > General > Workflow permissions:
+  #      select "Read and write permissions". A repository left on the read-only
+  #      default strips `packages: write` from GITHUB_TOKEN no matter what this
+  #      file declares, so the very first push cannot create the package.
+  #   2. Create a repository VARIABLE (not a secret) named PUBLISH_IMAGES with
+  #      the value `true`:  Settings > Secrets and variables > Actions > Variables.
+  #
+  # The first push creates the package as PRIVATE and links it to this repo. To
+  # let anyone pull it: package page > Package settings > Change visibility.
+  #
+  # A fork's GITHUB_TOKEN cannot write to the upstream package namespace, so a
+  # fork never pushes even with the variable set.
+  PUSH: ${{ vars.PUBLISH_IMAGES == 'true' && github.event.repository.fork == false }}
 
 jobs:
   build:
@@ -182,7 +199,9 @@ jobs:
   merge:
     name: manifest ${{ matrix.app }}
     needs: [build]
-    if: github.event.repository.fork == false
+    # Same gate as the push steps in `build`. Without the variable there are no
+    # digest artifacts to assemble, and this job would fail on an empty download.
+    if: vars.PUBLISH_IMAGES == 'true' && github.event.repository.fork == false
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
