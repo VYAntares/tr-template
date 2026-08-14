@@ -1,0 +1,3 @@
+# Prisma client output. Generated from schema.prisma on install and in the Docker
+# build; committing it would put a build artifact under review.
+src/generated/

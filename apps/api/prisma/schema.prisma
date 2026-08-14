@@ -1,0 +1,27 @@
+// Prisma 7. Two things differ from every v6 tutorial:
+//   - the connection URL lives in ../prisma.config.ts, not in this block;
+//   - the generator is `prisma-client` (Rust-free) and `output` is mandatory.
+datasource db {
+  provider = "postgresql"
+}
+
+// Inside src/ because the prisma-client generator emits TypeScript, not JavaScript:
+// it has to be compiled by `nest build` like any other source file, and rootDir
+// is src, so anything above it cannot be emitted. Lint, coverage and git all
+// exclude src/generated explicitly instead.
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
+}
+
+// The template ships one trivial model so the migration pipeline, the Prisma
+// client generation and the health probe all have something real to exercise.
+// Replace it with the domain model of the app you are building.
+model Example {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

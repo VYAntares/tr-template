@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@ft/tsconfig/nest.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    // Nothing imports this app's types, and emitting declarations makes every
+    // inferred type have to be nameable: createZodDto returns a type from a
+    // hashed internal path and fails with TS2883.
+    "declaration": false,
+    // Its own build-info file: sharing one with tsconfig.build.json would mix a
+    // noEmit run's state into the emitting run's.
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+  },
+  // Tests are typechecked here and excluded from the build (tsconfig.build.json).
+  // src/generated is in: the Prisma client is TypeScript that has to compile
+  // into dist, and excluding it would only hide errors until runtime.
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist", "coverage"],
+}
